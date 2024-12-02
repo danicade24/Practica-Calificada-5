@@ -1,0 +1,30 @@
+---
+- name: Actualizar paquetes del sistema
+  ansible.builtin.apt:
+    name: "*"
+    state: latest  
+
+# - name: Configurar la zona horaria y locales
+
+- name: Configurar la zona local America/Lima
+  become: true
+  timezone:
+    name: 'America/Lima'  
+
+- name: Crear un grupo llamado admin
+  group:
+    name: admin
+    state: present
+
+- name: Crear un usuario 'devuser'
+  user:
+    name: devuser
+    shell: /bin/bash
+    password: devuser
+      # password: "{{ 'Contraseña' | password_hash('sha512') }}"
+
+- name: Asignar el usuario 'devuser' al grupo 'admin'
+  user:
+    name: devuser
+    group: admin
+    append: yes
