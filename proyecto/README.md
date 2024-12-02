@@ -53,3 +53,9 @@ vagrant init ubuntu/focal64
 
 ## Ejercicio 2: Implementación de servicion web con seguridad básica
 
+----
+
+## Ejercicio 3: Despliegue de una palicación web con balanceador de carga
+
+---
+

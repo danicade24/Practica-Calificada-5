@@ -1,0 +1,29 @@
+---
+- name: Instalar nginx
+  apt: 
+    name: nginx
+    state: latest
+
+- name: Instalar openssl
+  package: 
+    name: 
+      - openssl
+    state: latest
+
+- name: Generar certificados SSL autofirmados
+  community.crypto.x509_certificate:
+    path: /etc/ssl/crt/ansible.com.crt
+    privatekey_path: /etc/ssl/private/ansible.com.pem
+    csr_path: /etc/ssl/csr/ansible.com.csr
+    provider: selfsigned
+
+# - name: Configurar Nginx para utilizar SSL
+#  hosts: allow
+#  become: yes
+#  become_method: sudo
+
+
+- name: Habilitar y configurar el firewall UFW para permitir tráfico den los puertos necesarios
+  ufw:
+    state: enabled
+    policy: allow
