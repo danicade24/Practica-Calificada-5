@@ -1,0 +1,69 @@
+---
+- name: Instalar dependencias de Python
+  apt: 
+    name: python3-pip
+    state: latest
+    update_cache: yes
+
+- name: Instalar Flask y Gunicorn
+  pip:
+    name:
+      - flask
+      - gunicorn
+
+- name: Crear directorios para la app Flask
+  ansible.builtin.file:
+    path: /etc/www/flask_app_{{ flask_port }}
+    state: directory
+    mode: '0755'
+  loop:
+    - 4000
+    - 4001
+    - 4002
+  loop_control:
+    loop_var: flask_port
+
+- name: Copiar la aplicación Flask
+  ansible.builtin.template:
+    src: templates/flask_app.py.j2
+    dest: /etc/www/flask_app_{{ flask_port }}/app.py
+    mode: '0644'
+  loop:
+    - 4000
+    - 4001
+    - 4002
+  loop_control:
+    loop_var: flask_port
+
+- name: Crear servicios systemd para cada instancia
+  ansible.builtin.template:
+    src: templates/flask_app@.service.j2
+    dest: /etc/systemd/system/flask_app@{{ flask_port }}.service
+  loop:
+    - 4000
+    - 4001
+    - 4002
+  loop_control:
+    loop_var: flask_port
+
+- name: Recargar el modulo de systemd para aplicar los cambios
+  ansible.builtin.systemd:
+    daemon_reload: yes
+
+- name: Iniciar y habilitar los servicios de la app
+  ansible.builtin.systemd:
+    name: "flask_app@{{ flask_port }}.service"
+    state: started
+    enabled: yes
+  loop:
+    - 4000
+    - 4001
+    - 4002
+  loop_control:
+    loop_var: flask_port
+
+- name: Configurar Nginx como balanceador de carga
+  ansible.builtin.template:
+    src: templates/nginx_load_balance.conf.j2
+    dest: /etc/nginx/sites-available/default
+    mode: '0644'

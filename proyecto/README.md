@@ -202,5 +202,14 @@ El servido va a escuchar en el puerto 80, definimos el nombre del servidor como 
 
 ## Ejercicio 3: Despliegue de una palicación web con balanceador de carga
 
+
+[Crear directorio](https://docs.ansible.com/ansible/latest/collections/ansible/builtin/file_module.html#ansible-collections-ansible-builtin-file-module)
+
+[Template](https://docs.ansible.com/ansible/latest/collections/ansible/builtin/template_module.html)
+
+[Configuracion del directorio](https://www.linode.com/docs/guides/how-to-enable-disable-website/)
+
+[Systemd](https://docs.ansible.com/ansible/5/collections/ansible/builtin/systemd_module.html)
+
 ---
 

@@ -1,0 +1,12 @@
+[Unit]
+Description=Flask Application instance on port %i
+After=network.target
+
+[Service]
+User=www-data
+WorkingDirectory=/etc/www/flask_app_%i
+ExecStart=/usr/bin/python3 /etc/www/flask_app_%i/app.py --port %i
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
