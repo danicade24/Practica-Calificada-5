@@ -4,27 +4,29 @@
     name: "*"
     state: latest  
 
-# - name: Configurar la zona horaria y locales
+# Configurar la zona horaria y locales
 
 - name: Configurar la zona local America/Lima
   become: true
   timezone:
-    name: 'America/Lima'  
+    name: 'America/Lima'
+
+- name: Configurar locales
+  become: true
+  community.general.locale_gen:
+    name: es_PE.UTF-8
+    state: present   
 
 - name: Crear un grupo llamado admin
   group:
     name: admin
     state: present
 
-- name: Crear un usuario 'devuser'
+- name: Crear un usuario 'devuser' y asignarlo al grupo 'admin'
   user:
     name: devuser
     shell: /bin/bash
-    password: devuser
-      # password: "{{ 'Contraseña' | password_hash('sha512') }}"
-
-- name: Asignar el usuario 'devuser' al grupo 'admin'
-  user:
-    name: devuser
-    group: admin
+    # password: devuser
+    password: "{{ 'devuser' | password_hash('sha512') }}"
+    groups: admin
     append: yes

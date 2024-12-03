@@ -3,27 +3,46 @@
   apt: 
     name: nginx
     state: latest
+    update_cache: yes
 
-- name: Instalar openssl
-  package: 
-    name: 
-      - openssl
-    state: latest
+- name: Instalar OpenSSL
+  apt:
+    name: openssl
+    state: present
+    update_cache: yes
 
-- name: Generar certificados SSL autofirmados
+- name: Crear directorio para certificados SSL
+  file:
+    path: /etc/ssl/certs
+    state: directory
+    mode: '0755'
+
+- name: Generar clave privada
+  community.crypto.openssl_privatekey:
+    path: /etc/ssl/private/mi_certificado.key
+    size: 2048
+
+- name: Generar certificado SSL autofirmado
   community.crypto.x509_certificate:
-    path: /etc/ssl/crt/ansible.com.crt
-    privatekey_path: /etc/ssl/private/ansible.com.pem
-    csr_path: /etc/ssl/csr/ansible.com.csr
+    path: /etc/ssl/certs/mi_certificado.crt
+    privatekey_path: /etc/ssl/private/mi_certificado.key
     provider: selfsigned
 
-# - name: Configurar Nginx para utilizar SSL
-#  hosts: allow
-#  become: yes
-#  become_method: sudo
+- name: Configurar Nginx para usar con SSL
+  ansible.builtin.template:
+    src: templates/nginx_ssl.conf.j2
+    dest: /etc/nginx/sites-available/default
+    mode: '0644'
+  notify:
+    - Reiniciar Nginx
 
-
-- name: Habilitar y configurar el firewall UFW para permitir tráfico den los puertos necesarios
+- name: Habilitar y configurar el firewall UFW 
   ufw:
     state: enabled
     policy: allow
+
+- name: Permitir tráfico en los puertos necesarios
+  ufw:
+    rule: allow
+    port: "22,80,443" # SSH, HTTP, HTTPS
+    proto: tcp
