@@ -1,0 +1,126 @@
+---
+- name: Descargar binarios de Prometheus desde GitHub
+  ansible.builtin.get_url:
+    url: "https://github.com/prometheus/prometheus/releases/download/v2.44.0/prometheus-2.44.0.linux-amd64.tar.gz"
+    dest: /tmp/prometheus.tar.gz
+
+- name: Crear directorio para Prometheus
+  ansible.builtin.file:
+    path: /etc/prometheus
+    state: directory
+    mode: '0755'
+
+- name: Extraer Prometheus
+  ansible.builtin.unarchive:
+    src: /tmp/prometheus.tar.gz
+    dest: /etc/prometheus
+    remote_src: yes
+
+- name: Crear usuario para Prometheus
+  user:
+    name: prometheus
+    shell: /usr/sbin/nologin
+
+- name: Configurar Prometheus
+  ansible.builtin.copy:
+    src: templates/prometheus.yml.j2
+    dest: /etc/prometheus/prometheus.yml
+    owner: prometheus
+    group: prometheus
+    mode: '0644'
+  notify:
+    - Reiniciar prometheus
+
+- name: Configurar alertas en Prometheus
+  ansible.builtin.copy:
+    src: templates/alert.rules.j2
+    dest: /etc/prometheus/alert.rules
+  notify:
+    - Reiniciar prometheus
+
+- name: Crear directorio de almacenamiento para Prometheus
+  ansible.builtin.file:
+    path: /var/lib/prometheus
+    state: directory
+    mode: '0755'
+  become: yes
+
+- name: Dar permisos a Prometheus para el directorio de almacenamiento
+  ansible.builtin.file:
+    path: /var/lib/prometheus
+    owner: prometheus
+    group: prometheus
+    mode: '0755'
+  become: yes
+
+- name: Crear servicio para Prometheus
+  ansible.builtin.copy:
+    src: templates/prometheus.service.j2
+    dest: /etc/systemd/system/prometheus.service          
+  notify:
+    - Reiniciar prometheus
+
+- name: Descargar binarios de Node Exporter desde GitHub
+  ansible.builtin.get_url:
+    url: "https://github.com/prometheus/node_exporter/releases/download/v1.8.2/node_exporter-1.8.2.linux-amd64.tar.gz"
+    dest: /tmp/node_exporter.tar.gz
+
+- name: Crear directorio para Node Exporter
+  ansible.builtin.file:
+    path: /etc/node_exporter
+    state: directory
+    mode: '0755'
+
+- name: Extraer Node Exporter
+  ansible.builtin.unarchive:
+    src: /tmp/node_exporter.tar.gz
+    dest: /etc/node_exporter
+    remote_src: yes
+
+- name: Crear servicio para Node Exporter
+  ansible.builtin.copy:
+    src: templates/node_exporter.service.j2
+    dest: /etc/systemd/system/node_exporter.service
+
+- name: Iniciar Node Exporter
+  ansible.builtin.systemd:
+    name: node_exporter
+    state: started
+    enabled: yes
+
+- name: Instalar dependencias de Flask
+  pip:
+    name: prometheus-flask-exporter
+
+- name: Instalar Python y pip
+  apt:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - python3
+    - python3-pip
+
+- name: Agregar clave GPG de Grafana
+  apt_key:
+    url: "https://packages.grafana.com/gpg.key"
+    state: present
+
+- name: Agregar repositorio de Grafana
+  apt_repository:
+    repo: "deb https://packages.grafana.com/oss/deb stable main"
+    state: present
+
+- name: Actualizar la caché de paquetes
+  apt:
+    update_cache: yes
+
+- name: Instalar Grafana
+  apt:
+    name: grafana
+    state: present
+
+- name: Habilitar y iniciar el servicio de Grafana
+  ansible.builtin.systemd:
+    name: grafana-server
+    state: started
+    enabled: yes

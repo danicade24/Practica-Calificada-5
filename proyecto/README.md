@@ -396,6 +396,12 @@ Para la creacion, inicialización y habilitación de servicios se consulto en [S
 
 En este ejercicio debemos: 
 
+
+
+[Configuracion de Prometheus con Ansible](https://prometheus-community.github.io/ansible/branch/main/prometheus_role.html#entry-point-main-installs-and-configures-prometheus)
+
+[Descargas Node Exporter](https://github.com/prometheus/node_exporter/releases)
+
 ---
 
 ## Ejercicio 5: Implementación de alta disponibilidad y recuperación de desastres
