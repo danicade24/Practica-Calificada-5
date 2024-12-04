@@ -193,10 +193,20 @@ El servido va a escuchar en el puerto 80, definimos el nombre del servidor como 
 
 ![](docs/ej2/ssl_ceritificado.png)
 
-![](docs/ej2/ufw.png)
 
 ![](docs/ej2/localhost.png)
 
+- Verificamos que Nginx está escuchando en los puertos configurados y tambien el estado del Firewall
+
+![](docs/ej2/nginx_puertos.png)
+
+![](docs/ej2/ufw.png)
+
+- Verificamos la prueba de HTTP y su redireccionamiento
+
+![](docs/ej2/http.png)
+
+![](docs/ej2/redireccion.png)
 ---
  **Nota**
 - Para la configuración de generación de certificados autofirmados consulté en [la siguiente página](https://docs.ansible.com/ansible/latest/collections/community/crypto/docsite/guide_selfsigned.html)
