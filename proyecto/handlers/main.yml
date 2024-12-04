@@ -5,6 +5,33 @@
     state: restarted
 
 - name: Reiniciar prometheus
-  ansible.builtin.service:
+  ansible.builtin.systemd:
     name: prometheus
     state: restarted
+    enabled: yes
+    daemon_reload: yes
+
+- name: Reiniciar PostgreSQL
+  ansible.builtin.service:
+    name: postgresql
+    state: restarted
+
+- name: reload_prometheus
+  ansible.builtin.uri:
+    url: http://localhost:9090/-/reload
+    method: POST
+    status_code: 200
+
+- name: Reiniciar Keepalived
+  ansible.builtin.service:
+    name: keepalived
+    state: restarted
+
+- name: Esperar a que PostgreSQL esté disponible
+  wait_for:
+    host: "{{ postgres_master_ip }}"
+    port: 5432
+    state: started
+    timeout: 30
+  vars:
+    postgres_master_ip: "192.168.1.10"

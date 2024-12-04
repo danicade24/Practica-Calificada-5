@@ -1,0 +1,125 @@
+# Configurar PostgreSQL (Nodo maestro)
+- name: Instalar PostgreSQL en el nodo maestro
+  apt:
+    name: postgresql
+    state: present
+    update_cache: yes
+
+- name: Asegurarse de que PostgreSQL esté funcionando en el nodo maestro
+  ansible.builtin.service:
+    name: postgresql
+    state: started
+
+- name: Permitir puerto 5432 para replicación en el nodo maestro
+  ufw:
+    rule: allow
+    port: 5432
+    proto: tcp
+
+- name: Configurar PostgreSQL para replicación en el nodo maestro
+  lineinfile:
+    path: /etc/postgresql/12/main/postgresql.conf
+    regexp: '^#?wal_level'
+    line: 'wal_level = replica'
+  notify: Reiniciar PostgreSQL 
+
+- name: Modificar archivo pg_hba.conf para permitir replicación en el nodo maestro
+  lineinfile:
+    path: /etc/postgresql/12/main/pg_hba.conf
+    regexp: '^#?host    replication'
+    line: 'host    replication     postgres     192.168.1.0/24      md5'
+
+# Reiniciar PostgreSQL en el nodo maestro
+- name: Reiniciar PostgreSQL en el nodo maestro
+  ansible.builtin.service:
+    name: postgresql
+    state: restarted
+    notify: Esperar a que PostgreSQL esté disponible
+
+# Configurar PostgreSQL (Nodo réplica)
+- name: Instalar PostgreSQL en el nodo réplica
+  apt:
+    name: postgresql
+    state: present
+    update_cache: yes
+
+- name: Clonar la base de datos primaria en el nodo réplica
+  shell: |
+    pg_basebackup -h {{ postgres_master_ip }} -U postgres -D /var/lib/postgresql/12/main -P -R
+  vars:
+    postgres_master_ip: "192.168.1.10"  # Dirección IP del nodo maestro
+  notify: Reiniciar PostgreSQL
+
+# Reiniciar PostgreSQL en el nodo réplica
+- name: Reiniciar PostgreSQL en el nodo réplica
+  ansible.builtin.service:
+    name: postgresql
+    state: restarted
+
+- name: Configurar archivo recovery.conf en el nodo réplica
+  ansible.builtin.template:
+    src: templates/postgresql.conf.j2
+    dest: /var/lib/postgresql/12/main/recovery.conf
+
+# Crear y configurar script de backup
+- name: Crear script de backup de PostgreSQL
+  ansible.builtin.template:
+    src: templates/backup.sh.j2
+    dest: /usr/local/bin/backup.sh
+    mode: '0755'
+  vars:
+    postgres_db: "mydatabase"         # Base de datos que deseas respaldar
+    backup_dir: "/var/backups/postgresql"  # Directorio donde se guardarán los backups
+      
+- name: Crear tarea cron para backup automático diario
+  cron:
+    name: "Backup diario de PostgreSQL"
+    minute: "0"
+    hour: "2"
+    job: "/usr/local/bin/backup.sh"
+    state: present
+
+# Crear script de restauración
+- name: Crear script de restauración de PostgreSQL
+  ansible.builtin.template:
+    src: templates/restore.sh.j2
+    dest: /usr/local/bin/restore.sh
+    mode: '0755'
+  vars:
+    postgres_db: "mydatabase"  # Base de datos que deseas restaurar
+    backup_file: "/var/backups/postgresql/backup_to_restore.sql"
+      
+# Configurar Keepalived para Failover (Nodo maestro)
+- name: Instalar Keepalived en el nodo maestro
+  apt:
+    name: keepalived
+    state: present
+
+- name: Configurar archivo de configuración de Keepalived en el nodo maestro
+  ansible.builtin.template:
+    src: templates/keepalived.conf.j2
+    dest: /etc/keepalived/keepalived.conf
+  vars:
+    node_state: "MASTER"
+    node_priority: 101 
+  notify: Reiniciar Keepalived
+
+# Configurar Keepalived para Failover (Nodo réplica)
+- name: Instalar Keepalived en el nodo réplica
+  apt:
+    name: keepalived
+    state: present
+
+- name: Configurar archivo de configuración de Keepalived en el nodo réplica
+  ansible.builtin.template:
+    src: templates/keepalived.conf.j2
+    dest: /etc/keepalived/keepalived.conf
+  vars:
+    node_state: "BACKUP"
+    node_priority: 99
+  notify: Reiniciar Keepalived
+
+- name: Reiniciar Keepalived en el nodo réplica
+  ansible.builtin.service:
+    name: keepalived
+    state: restarted

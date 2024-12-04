@@ -550,9 +550,35 @@ Como no tenemos interfaz no podemos acceder directamente pero nos logueamos con 
 `
 
 
+### Acceder a través del navegador 
+
+Ejecutamos el siguiente comando para conocer la direccion ipv4 asociada a nuestra máquina host y poder conectarnos con esa ip a los puertos de prometheus, grafana, node exporter y de la app.
+
+```bash
+hostname -I
+```
+Nos muestra una slaida como esta: 
+```
+10.0.2.15 192.168.33.10 fd00::a5:dcff:fe83:3a0f 
+```
+
+![](docs/ej4/prometheus.png)
+
+![](docs/ej4/grafana.png)
+
+![](docs/ej4/app.png)
+
+![](docs/ej4/node_exporter.png)
+
+### Observamos las métricas de Node Exporter
+
+![](docs/ej4/node_metrics.png)
+
 [Configuracion de Prometheus con Ansible](https://prometheus-community.github.io/ansible/branch/main/prometheus_role.html#entry-point-main-installs-and-configures-prometheus)
 
 [Descargas Node Exporter](https://github.com/prometheus/node_exporter/releases)
+
+[Guia para la instalacion de prometheus y grafana](https://medium.com/devops4me/install-grafana-prometheus-node-exporter-using-ansible-1771e649a4b3)
 
 ---
 

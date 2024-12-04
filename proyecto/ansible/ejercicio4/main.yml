@@ -29,14 +29,14 @@
     group: prometheus
     mode: '0644'
   notify:
-    - Reiniciar prometheus
+    - Recargar prometheus
 
 - name: Configurar alertas en Prometheus
   ansible.builtin.copy:
     src: templates/alert.rules.j2
     dest: /etc/prometheus/alert.rules
   notify:
-    - Reiniciar prometheus
+    - Recargar prometheus
 
 - name: Crear directorio de almacenamiento para Prometheus
   ansible.builtin.file:
@@ -54,7 +54,7 @@
   become: yes
 
 - name: Crear servicio para Prometheus
-  ansible.builtin.copy:
+  ansible.builtin.template:
     src: templates/prometheus.service.j2
     dest: /etc/systemd/system/prometheus.service          
   notify:
@@ -62,23 +62,32 @@
 
 - name: Descargar binarios de Node Exporter desde GitHub
   ansible.builtin.get_url:
-    url: "https://github.com/prometheus/node_exporter/releases/download/v1.8.2/node_exporter-1.8.2.linux-amd64.tar.gz"
+    url: "https://github.com/prometheus/node_exporter/releases/download/v1.8.2/node_exporter-1.8.2.darwin-amd64.tar.gz"
     dest: /tmp/node_exporter.tar.gz
 
 - name: Crear directorio para Node Exporter
   ansible.builtin.file:
-    path: /etc/node_exporter
+    path: /opt/node_exporter
     state: directory
     mode: '0755'
 
 - name: Extraer Node Exporter
   ansible.builtin.unarchive:
     src: /tmp/node_exporter.tar.gz
-    dest: /etc/node_exporter
+    dest: /opt/node_exporter
     remote_src: yes
 
+- name: Asignar permisos de ejecución a node_exporter
+  ansible.builtin.file:
+    path: /opt/node_exporter/node_exporter-1.8.2.linux-amd64/node_exporter
+    mode: '0755'
+
+- name: Recargar systemd
+  ansible.builtin.systemd:
+    daemon_reload: yes
+
 - name: Crear servicio para Node Exporter
-  ansible.builtin.copy:
+  ansible.builtin.template:
     src: templates/node_exporter.service.j2
     dest: /etc/systemd/system/node_exporter.service
 
@@ -94,7 +103,7 @@
 
 - name: Instalar Python y pip
   apt:
-    name: "{{ item }}"
+    name: "{{item}}"
     state: present
   with_items:
     - python3
@@ -124,3 +133,12 @@
     name: grafana-server
     state: started
     enabled: yes
+
+- name: Esperar a que Grafana esté accesible
+  uri:
+    url: "http://127.0.0.1:3000"
+    status_code: 200
+  register: __result
+  until: __result.status == 200
+  retries: 120
+  delay: 2

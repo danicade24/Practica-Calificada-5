@@ -1,0 +1,5 @@
+#!/bin/bash
+PG_USER="postgres"
+PG_DB="mydatabase"
+BACKUP_FILE="/var/backups/postgresql/backup_to_restore.sql"
+psql -U $PG_USER $PG_DB < $BACKUP_FILE
