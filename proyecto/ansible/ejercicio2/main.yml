@@ -13,19 +13,19 @@
 
 - name: Crear directorio para certificados SSL
   file:
-    path: /etc/ssl/certs
+    path: /etc/nginx/ssl
     state: directory
     mode: '0755'
 
 - name: Generar clave privada
   community.crypto.openssl_privatekey:
-    path: /etc/ssl/private/mi_certificado.key
+    path: /etc/nginx/ssl/nginx-selfsigned.key
     size: 2048
 
 - name: Generar certificado SSL autofirmado
   community.crypto.x509_certificate:
-    path: /etc/ssl/certs/mi_certificado.crt
-    privatekey_path: /etc/ssl/private/mi_certificado.key
+    path: /etc/nginx/ssl/nginx-selfsigned.crt
+    privatekey_path: /etc/nginx/ssl/nginx-selfsigned.key
     provider: selfsigned
 
 - name: Configurar Nginx para usar con SSL
