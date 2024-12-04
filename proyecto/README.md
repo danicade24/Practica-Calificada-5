@@ -574,6 +574,16 @@ Nos muestra una slaida como esta:
 
 ![](docs/ej4/node_metrics.png)
 
+
+### Dashboards generados por Grafana
+
+Para generar las gráficas configuramos Prometheus pero con la dirección de nuestro servidor que es `http://192.168.33.10:9090` 
+![](docs/ej4/dashboard1.png)
+
+![](docs/ej4/dashboard2.png)
+
+![](docs/ej4/dashboard3.png)
+
 [Configuracion de Prometheus con Ansible](https://prometheus-community.github.io/ansible/branch/main/prometheus_role.html#entry-point-main-installs-and-configures-prometheus)
 
 [Descargas Node Exporter](https://github.com/prometheus/node_exporter/releases)
