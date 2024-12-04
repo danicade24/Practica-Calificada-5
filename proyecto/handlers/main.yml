@@ -16,7 +16,7 @@
     name: postgresql
     state: restarted
 
-- name: reload_prometheus
+- name: Recargar prometheus
   ansible.builtin.uri:
     url: http://localhost:9090/-/reload
     method: POST
