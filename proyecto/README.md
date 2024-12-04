@@ -396,6 +396,158 @@ Para la creacion, inicialización y habilitación de servicios se consulto en [S
 
 En este ejercicio debemos: 
 
+- Instalar y configurar Prometheus y Grafana. 
+- Configurar alertas básicas en Prometheus. 
+- Integrar métricas de la aplicación Flask. 
+
+### 1. Actualizamos nuestro playbook `site.yml`
+
+```yaml
+---
+- name: Aprovisionador de ansible para configurar la VM
+  hosts: all
+  become: yes
+  become_method: sudo
+  remote_user: vagrant
+  tasks:
+    - import_tasks: ansible/ejercicio1/main.yml
+    - import_tasks: ansible/ejercicio2/main.yml
+    - import_tasks: ansible/ejercicio3/main.yml
+    - import_tasks: ansible/ejercicio4/main.yml
+  handlers:
+    - import_tasks: handlers/main.yml
+```
+
+### 2. Se crean las tareas en `ansible/ejercicio4/main.yml`, las tareas son:
+
+- Instalar Prometheus y configurar su servicio
+
+```yaml
+- name: Descargar binarios de Prometheus desde GitHub
+  ansible.builtin.get_url:
+    url: "https://github.com/prometheus/prometheus/releases/download/v2.44.0/prometheus-2.44.0.linux-amd64.tar.gz"
+    dest: /tmp/prometheus.tar.gz
+
+- name: Extraer Prometheus
+  ansible.builtin.unarchive:
+    src: /tmp/prometheus.tar.gz
+    dest: /etc/prometheus
+    remote_src: yes
+
+- name: Crear servicio para Prometheus
+  ansible.builtin.copy:
+    src: templates/prometheus.service.j2
+    dest: /etc/systemd/system/prometheus.service          
+  notify:
+    - Reiniciar prometheus
+```
+
+- Instalar Node Exporter.  
+
+```yaml
+- name: Descargar binarios de Node Exporter desde GitHub
+  ansible.builtin.get_url:
+    url: "https://github.com/prometheus/node_exporter/releases/download/v1.8.2/node_exporter-1.8.2.linux-amd64.tar.gz"
+    dest: /tmp/node_exporter.tar.gz
+
+- name: Extraer Node Exporter
+  ansible.builtin.unarchive:
+    src: /tmp/node_exporter.tar.gz
+    dest: /etc/node_exporter
+    remote_src: yes
+
+- name: Crear servicio para Node Exporter
+  ansible.builtin.copy:
+    src: templates/node_exporter.service.j2
+    dest: /etc/systemd/system/node_exporter.service
+
+- name: Iniciar Node Exporter
+  ansible.builtin.systemd:
+    name: node_exporter
+    state: started
+    enabled: yes
+```
+
+- Instalar Grafana y configurar su servicio. 
+
+```yaml
+- name: Agregar clave GPG de Grafana
+  apt_key:
+    url: "https://packages.grafana.com/gpg.key"
+    state: present
+
+- name: Agregar repositorio de Grafana
+  apt_repository:
+    repo: "deb https://packages.grafana.com/oss/deb stable main"
+    state: present
+
+- name: Actualizar la caché de paquetes
+  apt:
+    update_cache: yes
+
+- name: Instalar Grafana
+  apt:
+    name: grafana
+    state: present
+```
+
+- Configurar alertas en Prometheus. 
+
+```yaml
+- name: Configurar alertas en Prometheus
+  ansible.builtin.copy:
+    src: templates/alert.rules.j2
+    dest: /etc/prometheus/alert.rules
+  notify:
+    - Reiniciar prometheus
+```
+
+
+### 3. Creamos un manejador para reiniciar Prometheus:
+
+```yaml
+- name: Reiniciar prometheus
+  ansible.builtin.service:
+    name: prometheus
+    state: restarted
+```
+
+### 4. Creamos las plantillas:
+
+- `prometheus.yml.j2` : Se encarga de la comnfiguración básica de Pometheus nos dice que endpoint se deben de monitorear y el tiempo de espera para la recolección de las métricas.  
+
+- `prometheus.service.yml.j2` : Se encarga de definir el servicio systemd para Prometheus, especifica las variables de entorno, los archivos de configuración.
+
+- `node_exporter.service.yml.j2` : Define el servicio systemd para Node Exporter, que es una herramienta para recolectar métricas del sistema, como el uso de CPU, memoria, disco, etc.
+
+- `alert.rules.j2` : Define las condiciones bajo las cuales Prometheus enviará alertas. Por ejemplo, si el uso de la CPU supera cierto límite configurado o determinado o si una métrica de Flask no está respondiendo correctamente.
+
+### 5. Actualizamos la máquina virtual con los cambios implementados para que se ejecuten las nuevas tareas:
+
+![](docs/ej4/task1.png)
+
+![](docs/ej4/task2.png)
+
+### 6. Objetivos esperados
+
+- Verificamos el estado de prometheus
+
+![](docs/ej4/estado_prometheus.png)
+
+- Accedemos al servidor de Prometheus para ver las metricas
+
+![](docs/ej4/metricas.png)
+
+- Verificamos el estado de grafana
+
+![](docs/ej4/estado_garfana.png)
+
+- Accedemos al servidor de grafana 
+
+![](docs/ej4/localhost3000.png)
+
+Como no tenemos interfaz no podemos acceder directamente pero nos logueamos con el comando `curl -u admin:admin http://localhost:3000/
+`
 
 
 [Configuracion de Prometheus con Ansible](https://prometheus-community.github.io/ansible/branch/main/prometheus_role.html#entry-point-main-installs-and-configures-prometheus)
